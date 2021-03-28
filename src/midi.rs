@@ -27,17 +27,19 @@ pub fn read_keys(port_name: &str) -> Result<(), Box<dyn Error>> {
 
     // Set up for reading key events.
     let input = MidiInput::new("samplr")?;
-    let inport = (0..input.port_count())
+    let inport = input
+        .ports()
+        .into_iter()
         .find(|p| {
-            let name = input.port_name(*p).unwrap();
-            let port_index = name.rfind(' ').unwrap();
+            let name = input.port_name(p).unwrap();
+            let port_index = name.find(':').unwrap();
             &name[..port_index] == port_name
         })
         .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))?;
 
     // Read and process key events.
-    let _handler = input.connect(
-        inport,
+    let handler = input.connect(
+        &inport,
         "samplr-input",
         move |_, message: &[u8], _| {
             // Leading bit of message is 1 if MIDI "status": the
