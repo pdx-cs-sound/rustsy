@@ -160,7 +160,7 @@ impl Loop {
         // Find the dominant frequency.
         let f_max = max_freq(buf);
         let p = |f| f32::floor(SAMPLE_RATE as f32 / f + 0.5) as usize;
-        let (freq, p_max) = if f_max >= F_MIN && f_max <= F_MAX {
+        let (freq, p_max) = if (F_MIN..=F_MAX).contains(&f_max) {
             (Some(f_max), p(f_max))
         } else {
             (None, p(F_MAX))
@@ -176,7 +176,7 @@ impl Loop {
 
     /// Iterator over the samples of a loop, resampled
     /// to the given target frequency.
-    pub fn iter<'a>(&'a self, freq: f32) -> Samples<'a> {
+    pub fn iter(&self, freq: f32) -> Samples<'_> {
         let incr = match self.freq {
             Some(f) => freq / f,
             None => 1.0,

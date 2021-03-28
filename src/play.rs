@@ -7,92 +7,67 @@
 
 use std::error::Error;
 use std::io::{self, ErrorKind};
-use std::sync::{Arc, Mutex};
 
 use cpal::traits::*;
 
 use crate::*;
 
-use lazy_static::*;
-
-lazy_static! {
-    static ref PLAYER: Arc<Mutex<Option<Player>>> =
-        Arc::new(Mutex::new(None));
-}
-
-struct Player {
-    event_loop: cpal::EventLoop,
-    device: cpal::Device,
-    format: cpal::Format,
+pub struct Player {
+    _stream: cpal::Stream,
 }
 
 /// Gather samples and post for playback.
-pub fn play(samples: Stream) -> Result<(), Box<dyn Error>> {
+pub fn play(mut samples: Box<(dyn Iterator<Item = f32> + Send + 'static)>) -> Result<Player, Box<dyn Error + '_>> {
 
-    // Create and initialize cpal state.
-    let mut player = PLAYER.lock()?;
-    if player.is_none() {
-        let host = cpal::default_host();
-        let event_loop = host.event_loop();
-        let device = host.default_output_device()
-            .ok_or_else(|| Box::new(io::Error::from(
-                ErrorKind::ConnectionRefused)))?;
-        let target_rate = cpal::SampleRate(SAMPLE_RATE as u32);
-        let format = cpal::Format {
-            channels: 1,
-            sample_rate: target_rate,
-            data_type: cpal::SampleFormat::I16,
-        };
-        *player = Some(Player { event_loop, device, format });
-    }
-    let player = match &*player {
-        Some(p) => p,
-        None => panic!("internal error: no player"),
+    // Get the device.
+    let host = cpal::default_host();
+    let device = host.default_output_device()
+        .ok_or_else(|| Box::new(io::Error::from(
+            ErrorKind::ConnectionRefused)))?;
+
+    // Force-build a config.
+    let target_rate = cpal::SampleRate(SAMPLE_RATE as u32);
+    let config = cpal::StreamConfig {
+        channels: 1,
+        sample_rate: target_rate,
+        buffer_size: cpal::BufferSize::Fixed(24),
     };
 
-    let stream_id = (&player.event_loop)
-        .build_output_stream(&player.device, &player.format)?;
-    (&player.event_loop).play_stream(stream_id)?;
-
-    let samples = &mut std::sync::Arc::new(std::sync::Mutex::new(samples));
-    let (send, recv) = std::sync::mpsc::channel();
-    crossbeam::scope(move |scope| {
-        let samples = samples.clone();
-        let send = send.clone();
-        scope.spawn(move || {
-            (&player.event_loop).run(move |stream_id, data| {
-                use cpal::UnknownTypeOutputBuffer::I16 as UTOB;
-                use cpal::StreamData::Output as SDO;
-                if let SDO { buffer: UTOB(mut out) } = data.unwrap() {
-                    let out = &mut *out;
-                    let nout = out.len();
-                    // println!("run {}", nout);
-                    let mut samples = samples.lock().unwrap();
-                    for i in 0..nout {
-                        match samples.next() {
-                            Some(s) => {
-                                out[i] =
-                                    f32::floor(s * 32768.0) as i16;
-                            },
-                            None => {
-                                for j in i..nout {
-                                    out[j] = 0;
-                                }
-                                (&player.event_loop).destroy_stream(stream_id);
-                                send.send(()).unwrap();
-                                break;
-                            },
-                        }
+    // Build player callback.
+    let data_callback = move |out: &mut cpal::Data, _info: &cpal::OutputCallbackInfo| {
+        let out = out.as_slice_mut().unwrap();
+        let nout = out.len();
+        // println!("run {}", nout);
+        for i in 0..nout {
+            match samples.next() {
+                Some(s) => {
+                    out[i] = f32::floor(s * 32767.0) as i16;
+                },
+                None => {
+                    #[allow(clippy::needless_range_loop)]
+                    for j in i..nout {
+                        out[j] = 0;
                     }
-                } else {
-                    panic!("unexpected output buffer type");
-                }
-            });
-        });
-        println!("spawned");
-        let () = recv.recv().unwrap();
-        println!("done");
-    });
+                    // XXX Handle takedown somehow.
+                    break;
+                },
+            }
+        }
+    };
 
-    Ok(())
+    // Build player error callback.
+    let error_callback = |err| {
+        eprintln!("an error occurred on the output audio stream: {}", err);
+        std::process::exit(1);
+    };
+
+    // Set up the stream.
+    let stream = device.build_output_stream_raw(
+        &config,
+        cpal::SampleFormat::I16,
+        data_callback,
+        error_callback,
+    )?;
+
+    Ok(Player { _stream: stream })
 }

@@ -38,7 +38,7 @@ pub fn read_keys(port_name: &str) -> Result<(), Box<dyn Error>> {
         .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))?;
 
     // Read and process key events.
-    let handler = input.connect(
+    let _handler = input.connect(
         &inport,
         "samplr-input",
         move |_, message: &[u8], _| {

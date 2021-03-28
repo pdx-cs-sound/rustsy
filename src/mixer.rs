@@ -29,10 +29,16 @@ const AGC_VOICES: usize = 8;
 /// Mixer gain before AGC kicks in.
 const LINEAR_GAIN: f32 = 0.1;
 
+impl Default for mixer::Mixer<'_> {
+    fn default() -> Self {
+        Self { streams: vec![], gain: LINEAR_GAIN }
+    }
+}
+
 impl<'a> Mixer<'a> {
     /// New mixer with no streams.
     pub fn new() -> Self {
-        Self { streams: vec![], gain: LINEAR_GAIN }
+        Self::default()
     }
 
     /// New mixer with initial streams.
@@ -61,7 +67,6 @@ impl<'a> Mixer<'a> {
         };
     }
 }
-
 
 /// Iterator over simultaneous streams of samples that adds
 /// them to get a result.

@@ -20,8 +20,6 @@ pub use cpal;
 pub use midir;
 pub use dsp;
 pub use num_complex;
-pub use crossbeam;
-pub use lazy_static;
 
 /// Synthkit modules.
 pub use midi::*;
