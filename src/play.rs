@@ -25,17 +25,47 @@ pub fn play(mut samples: Box<(dyn Iterator<Item = f32> + Send + 'static)>) -> Re
         .ok_or_else(|| Box::new(io::Error::from(
             ErrorKind::ConnectionRefused)))?;
 
-    // Force-build a config.
+    // Config matcher.
     let target_rate = cpal::SampleRate(SAMPLE_RATE as u32);
-    let config = cpal::StreamConfig {
-        channels: 1,
-        sample_rate: target_rate,
-        buffer_size: cpal::BufferSize::Fixed(24),
+    let config_matcher = |device: &cpal::Device| {
+        for config_range in device.supported_output_configs()? {
+            if config_range.channels() != 1 {
+                continue;
+            }
+            if config_range.sample_format() != cpal::SampleFormat::I16 {
+                continue;
+            }
+            if config_range.min_sample_rate() > target_rate {
+                continue;
+            }
+            if config_range.max_sample_rate() < target_rate {
+                continue;
+            }
+            let buffer_size = match config_range.buffer_size() {
+                cpal::SupportedBufferSize::Range {min, max} => {
+                    eprintln!("buffer size {}..{}", min, max);
+                    cpal::BufferSize::Fixed((*min).max(WANT_BUFSIZE.min(*max)))
+                }
+                cpal::SupportedBufferSize::Unknown => cpal::BufferSize::Default,
+            };
+            let config = cpal::StreamConfig {
+                channels: 1,
+                sample_rate: target_rate,
+                buffer_size,
+            };
+            // let config = config_range.with_sample_rate(target_rate);
+            // let config = config.config();
+            eprintln!("config {:#?}", config);
+            return Ok(config);
+        }
+        Err(cpal::SupportedStreamConfigsError::DeviceNotAvailable)
     };
 
+    // Try to find a matching config.
+    let config = config_matcher(&device)?;
+
     // Build player callback.
-    let data_callback = move |out: &mut cpal::Data, _info: &cpal::OutputCallbackInfo| {
-        let out = out.as_slice_mut().unwrap();
+    let data_callback = move |out: &mut [i16], _info: &cpal::OutputCallbackInfo| {
         let nout = out.len();
         // println!("run {}", nout);
         for i in 0..nout {
@@ -62,12 +92,13 @@ pub fn play(mut samples: Box<(dyn Iterator<Item = f32> + Send + 'static)>) -> Re
     };
 
     // Set up the stream.
-    let stream = device.build_output_stream_raw(
+    let stream = device.build_output_stream(
         &config,
-        cpal::SampleFormat::I16,
         data_callback,
         error_callback,
     )?;
+    stream.play()?;
 
+    eprintln!("stream built");
     Ok(Player { _stream: stream })
 }

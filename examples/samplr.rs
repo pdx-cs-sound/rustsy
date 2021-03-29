@@ -13,5 +13,5 @@ fn main() {
     let samples = Box::new(signal.into_iter());
     let _player = play(samples).unwrap();
     // Read and decode MIDI keys.
-    read_keys("Mobile Keys 49").unwrap();
+    read_keys("USB Oxygen 8 v2").unwrap();
 }

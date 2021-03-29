@@ -33,6 +33,10 @@ pub use mixer::*;
 /// parameter somehow in some future crate version.
 pub const SAMPLE_RATE: u32 = 48_000;
 
+/// The number of samples we want buffered. Smaller is
+/// better, until the underruns start.
+pub const WANT_BUFSIZE: u32 = 256;
+
 /// A stream of samples is just an iterator that returns
 /// samples.
 pub type Stream<'a> = Box<dyn Iterator<Item=f32> + Send + 'a>;
