@@ -8,11 +8,10 @@
 use std::f32::consts::PI;
 
 use dsp::{
-    node::{fft, complex::RealToComplex},
+    node::{complex::RealToComplex, fft},
     num_complex::Complex32,
     runtime::node::ProcessNode,
-    spectrum,
-    window,
+    spectrum, window,
 };
 
 use crate::*;
@@ -203,9 +202,7 @@ fn resamp(x: f32, indat: &[f32], fmax: f32, wnwdth: i64) -> f32 {
     for i in -wnwdth / 2..wnwdth / 2 - 1 {
         // Calc input sample index.
         let j = (x + i as f32).floor();
-        let r_w = 0.5
-            - 0.5
-                * f32::cos(2.0 * PI * (0.5 + (j - x) / wnwdth as f32));
+        let r_w = 0.5 - 0.5 * f32::cos(2.0 * PI * (0.5 + (j - x) / wnwdth as f32));
         let r_a = 2.0 * PI * (j - x) * fmax / SAMPLE_RATE as f32;
         let r_snc = if j - x == 0.0 {
             1.0

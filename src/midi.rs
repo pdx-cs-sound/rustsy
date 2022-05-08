@@ -16,9 +16,7 @@ use wmidi::*;
 
 /// Read and process key events from a MIDI keyboard with the
 /// given name.
-pub fn read_keys(
-    port_name: &str,
-) -> Result<mpsc::Receiver<MidiMessage<'static>>, Box<dyn Error>> {
+pub fn read_keys(port_name: &str) -> Result<mpsc::Receiver<MidiMessage<'static>>, Box<dyn Error>> {
     // Channel for communicating events from midir callback.
     let (sender, receiver) = mpsc::sync_channel(0);
 
@@ -45,9 +43,7 @@ pub fn read_keys(
                     let velocity8 = u8::from(velocity);
                     // If velocity is zero, treat as a note off message.
                     if velocity8 == 0 {
-                        sender
-                            .send(NoteOff(c, note, velocity))
-                            .unwrap();
+                        sender.send(NoteOff(c, note, velocity)).unwrap();
                         println!("note off: {}", note);
                     } else {
                         sender.send(NoteOn(c, note, velocity)).unwrap();
