@@ -1,73 +1,19 @@
-# synthkit: Rust Synthesizer Components
-Copyright (c) 2019 Bart Massey
+# rustsy: An Educational Synth in Rust
+Copyright (c) 2022 Bart Massey
 
-**This is a work in progress** and is barely useful.
+This project is a simple "educational" sound and music
+synthesizer. It is intended not so much as a finished
+instrument as a demo of basic synth functionality of several
+kinds.
 
-This library crate provides some components for building
-music synthesizers in Rust. It is currently focused on
-sampling synthesis, but many of the components could be used
-in some other kind of synthesizer.
-
-The example `harmony` application plays a sample forever as
-three-part harmony: A2 A4 C#5.
-
-The example `samplr` application is a Rust "sampling
-synthesizer". That is, given a sound sample, it will play it
-at various pitches as keys are pressed on a MIDI keyboard.
-
-## Status / Roadmap
-
-### Immediate Goals
-
-* [x] Basic sampler auto-loop: tries to identify a
-  reasonable loop point using correlation.
-
-* [x] Basic interpolation / resampling: Uses a
-  linear-interpolation and filtering algorithm by
-  Ron Nicholson.
-
-* [x] Primitive autotuning: measures the strongest sample
-  frequency within a range of 110-1720Hz.
-
-* [x] Replace the callback interface of `portaudio-rs` with a
-  blocking interface.
-
-* [x] Full support for MIDI key-off messages.
-
-* [x] Fix unbearable latency.
-
-* [ ] ADS envelope.
-
-* [ ] ADSR envelope with same-note replacement.
-
-* [ ] Add key velocity handling.
-
-* [ ] Cleaned-up library interface suitable for use in
-  programs other than the given examples.
-
-### Long-Term Goals
-
-* [ ] Support for MIDI messages other than key on-off.
-
-* [ ] Re-entrant MIDI to support multiple separate MIDI
-  sources.
-
-* [ ] Support for non-key sample playing in mixer.
-
-* [ ] Multiple formats and styles of sample (currently hardcoded
-  to 48000 sps, 1 channel, 16-bit samples).
-
-* [ ] Reliable high-quality sampler auto-loop.
-
-* [ ] Up-front octave resampling for better interpolation
-  accuracy at the expense of memory.
-
-* [ ] Fancy autotuning: deal with harmonics and cover a
-  larger range of sample frequencies.
-
-* [ ] Replace the callback interface of `midir` with a
-  blocking interface and use a reader thread. (This is hard,
-  since it will likely involve rewriting parts of `midir`.)
+Much of this project is ported from my
+[fm](http://github.com/pdx-cs-sound/fm) educational synth
+written in Python. The sampler, the audio and MIDI
+interfaces, and some of the structure was borrowed from my
+[synthkit](http://github.com/pdx-cs-sound/synthkit) sampling
+synth written in Rust. This code borrows its Git history
+from that project: see the branches in this repo labeled
+`synthkit-` for details.
 
 ## Acknowledgments
 
