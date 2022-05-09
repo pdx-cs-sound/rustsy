@@ -15,12 +15,11 @@ use crate::*;
 
 /// Gather samples and post for playback.
 pub fn play(mixer: Arc<Mutex<Mixer<'static>>>) -> Result<Player<cpal::Stream>, Box<dyn Error>> {
-
     // Get the device.
     let host = cpal::default_host();
-    let device = host.default_output_device()
-        .ok_or_else(|| Box::new(io::Error::from(
-            ErrorKind::ConnectionRefused)))?;
+    let device = host
+        .default_output_device()
+        .ok_or_else(|| Box::new(io::Error::from(ErrorKind::ConnectionRefused)))?;
 
     // Config matcher.
     let target_rate = cpal::SampleRate(SAMPLE_RATE as u32);
@@ -39,7 +38,7 @@ pub fn play(mixer: Arc<Mutex<Mixer<'static>>>) -> Result<Player<cpal::Stream>, B
                 continue;
             }
             let buffer_size = match config_range.buffer_size() {
-                cpal::SupportedBufferSize::Range {min, max} => {
+                cpal::SupportedBufferSize::Range { min, max } => {
                     eprintln!("buffer size {}..{}", min, max);
                     cpal::BufferSize::Fixed((*min).max(WANT_BUFSIZE.min(*max)))
                 }
@@ -70,7 +69,7 @@ pub fn play(mixer: Arc<Mutex<Mixer<'static>>>) -> Result<Player<cpal::Stream>, B
             match samples.next() {
                 Some(s) => {
                     out[i] = f32::floor(s * 32767.0) as i16;
-                },
+                }
                 None => {
                     #[allow(clippy::needless_range_loop)]
                     for j in i..nout {
@@ -78,7 +77,7 @@ pub fn play(mixer: Arc<Mutex<Mixer<'static>>>) -> Result<Player<cpal::Stream>, B
                     }
                     // XXX Handle takedown somehow.
                     break;
-                },
+                }
             }
         }
     };
@@ -91,11 +90,7 @@ pub fn play(mixer: Arc<Mutex<Mixer<'static>>>) -> Result<Player<cpal::Stream>, B
     };
 
     // Set up the stream.
-    let stream = device.build_output_stream(
-        &config,
-        data_callback,
-        error_callback,
-    )?;
+    let stream = device.build_output_stream(&config, data_callback, error_callback)?;
     stream.play()?;
 
     eprintln!("stream built");
