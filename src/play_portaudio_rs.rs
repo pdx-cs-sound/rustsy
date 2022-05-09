@@ -6,20 +6,19 @@
 //! Synthesizer audio player.
 
 use std::error::Error;
+use std::sync::{Arc, Mutex};
 
 use portaudio_rs as pa;
 
 use crate::*;
 
 /// Gather samples and post for playback.
-pub fn play<T>(mixer: &Mutex<Mixer>) -> Result<Player<pa::Stream>, Box<dyn Error>>
-where
-    T: Iterator<Item = f32>,
+pub fn play(mixer: Arc<Mutex<Mixer<'static>>>) -> Result<Player<pa::stream::Stream<'static, f32, f32>>, Box<dyn Error>>
 {
-    let mut callback = move |_: &[f32], out: &mut[f32], _, _| {
+    let callback = move |_: &[f32], out: &mut[f32], _, _| {
         let mut samples = mixer.lock().unwrap();
         let mut result = pa::stream::StreamCallbackResult::Continue;
-        let nout = out.len()
+        let nout = out.len();
         for i in 0..nout {
             match samples.next() {
                 Some(s) => out[i] = s,
@@ -41,7 +40,7 @@ where
         0, // 0 input channels.
         1, // 1 output channel.
         SAMPLE_RATE as f64,
-        WANT_BUFSIZE,
+        WANT_BUFSIZE as u64,
         Some(Box::new(callback)),
     )?;
     stream.start()?;
