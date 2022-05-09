@@ -7,12 +7,17 @@
 
 mod midi;
 mod mixer;
-#[cfg(feature = "portaudio-rs")]
-mod play_portaudio_rs;
 mod sampler;
 mod wave;
 mod wavio;
 
+#[cfg(feature = "cpal")]
+mod play_cpal;
+#[cfg(feature = "portaudio-rs")]
+mod play_portaudio_rs;
+
+#[cfg(feature = "cpal")]
+use play_cpal as play;
 #[cfg(feature = "portaudio-rs")]
 use play_portaudio_rs as play;
 
@@ -27,6 +32,10 @@ pub use wavio::*;
 /// samples per second. This constant will be made a
 /// parameter somehow in some future crate version.
 pub const SAMPLE_RATE: u32 = 48_000;
+
+/// The number of samples we want buffered. Smaller is
+/// better, until the underruns start.
+pub const WANT_BUFSIZE: u32 = 256;
 
 /// All voices run as iterators producing `f32`. This trait
 /// allows a voice to generically produce an iterator for

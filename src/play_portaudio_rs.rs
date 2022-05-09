@@ -6,61 +6,47 @@
 //! Synthesizer audio player.
 
 use std::error::Error;
-use std::sync::Mutex;
 
 use portaudio_rs as pa;
 
 use crate::*;
 
-/// Number of samples for a blocking write.
-const OUT_FRAMES: usize = 24;
+pub struct Player {
+    _stream: pa::Stream,
+}
 
 /// Gather samples and post for playback.
-pub fn play<T>(samples: &Mutex<T>) -> Result<(), Box<dyn Error>>
+pub fn play<T>(mut samples: Box<dyn Iterator<Item = f32> + Send + 'static>) -> Result<Player, Box<dyn Error>>
 where
     T: Iterator<Item = f32>,
 {
+    let mut callback = move |_: &[f32], out: &mut[f32], _, _| {
+        let mut result = pa::stream::StreamCallbackResult::Continue;
+        let nout = out.len()
+        for i in 0..nout {
+            match samples.next() {
+                Some(s) => out[i] = s,
+                None => {
+                    for s in &mut out[i..] {
+                        *s = 0.0;
+                    }
+                    result = pa::stream::StreamCallbackResult::Complete;
+                    break;
+                }
+            }
+        }
+        result
+    };
+
     // Create and initialize audio output.
     pa::initialize()?;
     let stream = pa::stream::Stream::open_default(
         0, // 0 input channels.
         1, // 1 output channel.
         SAMPLE_RATE as f64,
-        pa::stream::FRAMES_PER_BUFFER_UNSPECIFIED, // Least possible buffer.
-        None,                                      // No calback.
+        WANT_BUFSIZE,
+        Some(Box::new(callback)),
     )?;
     stream.start()?;
-
-    let mut out = [0.0; OUT_FRAMES];
-    let mut done = false;
-    loop {
-        {
-            // Be sure to unlock by dropping the stream guard
-            // before blocking in `write()`.
-            let mut samples = samples.lock().unwrap();
-            for i in 0..OUT_FRAMES {
-                match samples.next() {
-                    Some(s) => out[i] = s,
-                    None => {
-                        for s in &mut out[i..OUT_FRAMES] {
-                            *s = 0.0;
-                        }
-                        done = true;
-                    }
-                }
-            }
-        }
-        stream.write(&out).or_else(|e| match e {
-            pa::PaError::OutputUnderflowed => {
-                eprintln!("player underrun");
-                Ok(())
-            }
-            e => Err(e),
-        })?;
-        if done {
-            break;
-        }
-    }
-
-    Ok(())
+    Ok(Player(stream))
 }

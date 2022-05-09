@@ -13,6 +13,10 @@ edition = "2021"
 version = "0.3.2"
 optional = true
 
+[dependencies.cpal]
+version = "0.13.5"
+optional = true
+
 [dependencies]
 hound = "3.4.0"
 midir = "0.7.0"
@@ -23,4 +27,4 @@ structopt = "0.3.26"
 crossbeam = "0.8.1"
 
 [features]
-default = ["portaudio-rs"]
+default = ["cpal"]
