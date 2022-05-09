@@ -22,13 +22,19 @@ fn main() {
     let args = argparse::args();
     let kbd = args.keyboard;
 
-    let voice: Box<dyn Voice<'_>> = if let Some(ref sample) = args.sampler {
-        // Get a signal from a WAV file, make a loop.
-        let sound = get_sample(&sample).unwrap();
-        Box::new(Loop::new(&sound))
-    } else {
-        panic!("no valid voice: use --sampler or --wave");
-    };
+    let voice: Box<dyn Voice<'_>> =
+        if let Some(ref sample) = args.sampler {
+            // Get a signal from a WAV file, make a loop.
+            let sound = get_sample(&sample).unwrap();
+            Box::new(Loop::new(&sound))
+        } else if let Some(ref wave) = args.wave {
+            match wave.as_str() {
+                "sin"|"sine" => Box::new(Sine),
+                _ => panic!("invalid wave shape: use sine"),
+            }
+        } else {
+            panic!("no valid voice: use --sampler or --wave");
+        };
     let voice: &'static dyn Voice<'_> = Box::leak(voice);
 
     // Start the synth.

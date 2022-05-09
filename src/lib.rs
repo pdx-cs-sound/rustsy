@@ -9,12 +9,14 @@ mod midi;
 mod mixer;
 mod play;
 mod sampler;
+mod wave;
 mod wavio;
 
 pub use midi::*;
 pub use mixer::*;
 pub use play::*;
 pub use sampler::*;
+pub use wave::*;
 pub use wavio::*;
 
 /// The audio sample rate is currently fixed at 48000
