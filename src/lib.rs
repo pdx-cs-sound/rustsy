@@ -5,12 +5,16 @@
 
 //! Educational music synthesizer.
 
+#[cfg(feature="portaudio-rs")]
+mod play_portaudio_rs;
 mod midi;
 mod mixer;
-mod play;
 mod sampler;
 mod wave;
 mod wavio;
+
+#[cfg(feature="portaudio-rs")]
+use play_portaudio_rs as play;
 
 pub use midi::*;
 pub use mixer::*;
