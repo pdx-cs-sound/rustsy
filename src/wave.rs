@@ -31,7 +31,7 @@ impl Iterator for SineWave {
 }
 
 impl<'a> Voice<'a> for Sine {
-    fn iter_freq(&'a self, freq: f32) -> Box<dyn Iterator<Item=f32> + Send + 'a> {
+    fn iter_freq(&'a self, freq: f32) -> Box<dyn Iterator<Item = f32> + Send + 'a> {
         Box::new(SineWave::new(freq))
     }
 }

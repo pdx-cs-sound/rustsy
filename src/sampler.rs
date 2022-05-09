@@ -185,7 +185,7 @@ impl Loop {
 }
 
 impl<'a> Voice<'a> for Loop {
-    fn iter_freq(&'a self, freq: f32) -> Box<dyn Iterator<Item=f32> + Send + 'a> {
+    fn iter_freq(&'a self, freq: f32) -> Box<dyn Iterator<Item = f32> + Send + 'a> {
         Box::new(self.iter_freq(freq))
     }
 }

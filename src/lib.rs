@@ -5,15 +5,15 @@
 
 //! Educational music synthesizer.
 
-#[cfg(feature="portaudio-rs")]
-mod play_portaudio_rs;
 mod midi;
 mod mixer;
+#[cfg(feature = "portaudio-rs")]
+mod play_portaudio_rs;
 mod sampler;
 mod wave;
 mod wavio;
 
-#[cfg(feature="portaudio-rs")]
+#[cfg(feature = "portaudio-rs")]
 use play_portaudio_rs as play;
 
 pub use midi::*;
@@ -32,5 +32,5 @@ pub const SAMPLE_RATE: u32 = 48_000;
 /// allows a voice to generically produce an iterator for
 /// a given note.
 pub trait Voice<'a> {
-    fn iter_freq(&'a self, freq: f32) -> Box<dyn Iterator<Item=f32> + Send + 'a>;
+    fn iter_freq(&'a self, freq: f32) -> Box<dyn Iterator<Item = f32> + Send + 'a>;
 }
