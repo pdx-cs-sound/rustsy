@@ -19,6 +19,13 @@ synth written in Rust. This code borrows its Git history
 from that project: see the branches in this repo labeled
 `synthkit-` for details.
 
+## Status
+
+Currently has basic argument parsing; can operate as a
+sampler with `--sampler`; can operate as a sine wave synth
+with `--wave sine`. Next to be added are rest of wave types,
+FM, envelope, keyboard config.
+
 ## Acknowledgments
 
 Thanks to Ron Nicholson for the BASIC code for filtered
