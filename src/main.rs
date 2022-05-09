@@ -16,7 +16,7 @@ use wmidi::MidiMessage::*;
 
 use rustsy::*;
 
-static MIXER: OnceCell<Mutex<Mixer<Samples>>> = OnceCell::new();
+static MIXER: OnceCell<Mutex<Mixer>> = OnceCell::new();
 static SLOOP: OnceCell<Loop> = OnceCell::new();
 
 fn main() {
@@ -29,7 +29,9 @@ fn main() {
     // set up the mixer.
     let sound = get_sample(&sample).unwrap();
     SLOOP.set(Loop::new(&sound)).unwrap();
-    MIXER.set(Mutex::new(Mixer::new())).unwrap();
+    if let Err(_) = MIXER.set(Mutex::new(Mixer::new())) {
+        panic!("failed to set mixer");
+    }
 
     // Start the keyreader to get input.
     let keystream = read_keys(&kbd).unwrap();
@@ -42,7 +44,7 @@ fn main() {
             NoteOn(_c, note, _vel) => {
                 let gsloop = SLOOP.get().unwrap();
                 let mut gmixer = MIXER.get().unwrap().lock().unwrap();
-                let samples = gsloop.iter_freq(note.to_freq_f32());
+                let samples = Box::new(gsloop.iter_freq(note.to_freq_f32()));
                 let key = usize::from(note as u8);
                 gmixer.borrow_mut().add_key(key, samples);
                 drop(gmixer);

@@ -15,10 +15,9 @@ use std::collections::HashMap;
 /// scales appropriately to get output samples.  Implemented
 /// as an unbounded iterator: will return `Some(0.0)` when
 /// no sample streams are available.
-#[derive(Debug)]
-pub struct Mixer<I> {
+pub struct Mixer {
     /// Held key indexes and generators.
-    held: HashMap<usize, I>,
+    held: HashMap<usize, Box<dyn Iterator<Item=f32> + Send>>,
     /// Current mixer gain value.
     gain: f32,
 }
@@ -28,7 +27,7 @@ const AGC_VOICES: usize = 8;
 /// Mixer gain before AGC kicks in.
 const LINEAR_GAIN: f32 = 0.1;
 
-impl<I> Mixer<I> {
+impl Mixer {
     /// New mixer with no streams.
     pub fn new() -> Self {
         Self {
@@ -57,23 +56,9 @@ impl<I> Mixer<I> {
             LINEAR_GAIN * AGC_VOICES as f32 / nstreams as f32
         };
     }
-}
-
-impl<I> Mixer<I>
-where
-    I: Iterator<Item=f32>,
-{
-    /// New mixer with initial streams.
-    pub fn with_streams(streams: Vec<(usize, I)>) -> Self {
-        let mut result = Self::new();
-        for (k, s) in streams.into_iter() {
-            result.add_key(k, s);
-        }
-        result
-    }
 
     /// Add a stream to the mixer.
-    pub fn add_key(&mut self, key: usize, st: I) {
+    pub fn add_key(&mut self, key: usize, st: Box<dyn Iterator<Item=f32> + Send>) {
         let was_held = self.held.insert(key, st);
         assert!(was_held.is_none());
         self.agc();
@@ -82,10 +67,7 @@ where
 
 /// Iterator over simultaneous streams of samples that adds
 /// them to get a result.
-impl<I> Iterator for Mixer<I>
-where
-    I: Iterator<Item=f32>,
-{
+impl Iterator for Mixer {
     type Item = f32;
 
     // Get the next mixed sample. We do not assume that the
