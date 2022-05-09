@@ -10,25 +10,17 @@
 // one could undo this decision, but it seems fine for now.
 use std::collections::HashMap;
 
-use crate::*;
-
 /// A sample "mixer" that adds values from streams of
 /// samples (currently always associated with a key) and
 /// scales appropriately to get output samples.  Implemented
 /// as an unbounded iterator: will return `Some(0.0)` when
 /// no sample streams are available.
 #[derive(Debug)]
-pub struct Mixer<'a> {
-    /// Held key indexes and samples.
-    held: HashMap<usize, Samples<'a>>,
+pub struct Mixer<I> {
+    /// Held key indexes and generators.
+    held: HashMap<usize, I>,
     /// Current mixer gain value.
     gain: f32,
-}
-
-impl<'a> Default for Mixer<'a> {
-    fn default() -> Self {
-        Mixer::new()
-    }
 }
 
 /// Max voices before AGC kicks in.
@@ -36,29 +28,13 @@ const AGC_VOICES: usize = 8;
 /// Mixer gain before AGC kicks in.
 const LINEAR_GAIN: f32 = 0.1;
 
-impl<'a> Mixer<'a> {
+impl<I> Mixer<I> {
     /// New mixer with no streams.
     pub fn new() -> Self {
         Self {
             held: HashMap::with_capacity(128),
             gain: LINEAR_GAIN,
         }
-    }
-
-    /// New mixer with initial streams.
-    pub fn with_streams(streams: Vec<(usize, Samples<'a>)>) -> Self {
-        let mut result = Self::new();
-        for (k, s) in streams.into_iter() {
-            result.add_key(k, s);
-        }
-        result
-    }
-
-    /// Add a stream to the mixer.
-    pub fn add_key(&mut self, key: usize, st: Samples<'a>) {
-        let was_held = self.held.insert(key, st);
-        assert!(was_held.is_none());
-        self.agc();
     }
 
     /// Remove a stream from the mixer by key.
@@ -83,9 +59,33 @@ impl<'a> Mixer<'a> {
     }
 }
 
+impl<I> Mixer<I>
+where
+    I: Iterator<Item=f32>,
+{
+    /// New mixer with initial streams.
+    pub fn with_streams(streams: Vec<(usize, I)>) -> Self {
+        let mut result = Self::new();
+        for (k, s) in streams.into_iter() {
+            result.add_key(k, s);
+        }
+        result
+    }
+
+    /// Add a stream to the mixer.
+    pub fn add_key(&mut self, key: usize, st: I) {
+        let was_held = self.held.insert(key, st);
+        assert!(was_held.is_none());
+        self.agc();
+    }
+}
+
 /// Iterator over simultaneous streams of samples that adds
 /// them to get a result.
-impl<'a> Iterator for Mixer<'a> {
+impl<I> Iterator for Mixer<I>
+where
+    I: Iterator<Item=f32>,
+{
     type Item = f32;
 
     // Get the next mixed sample. We do not assume that the

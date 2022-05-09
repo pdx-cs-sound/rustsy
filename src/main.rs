@@ -16,18 +16,18 @@ use wmidi::MidiMessage::*;
 
 use rustsy::*;
 
-static MIXER: OnceCell<Mutex<Mixer<'static>>> = OnceCell::new();
+static MIXER: OnceCell<Mutex<Mixer<Samples>>> = OnceCell::new();
 static SLOOP: OnceCell<Loop> = OnceCell::new();
 
 fn main() {
     // Parse arguments.
     let args = argparse::args();
     let kbd = args.keyboard;
-    let wav = args.wave.unwrap();
+    let sample = args.sampler.unwrap();
 
     // Get a signal from a WAV file, make a loop,
     // set up the mixer.
-    let sound = get_sample(&wav).unwrap();
+    let sound = get_sample(&sample).unwrap();
     SLOOP.set(Loop::new(&sound)).unwrap();
     MIXER.set(Mutex::new(Mixer::new())).unwrap();
 
