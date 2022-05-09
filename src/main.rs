@@ -9,54 +9,52 @@ mod argparse;
 
 use std::borrow::BorrowMut;
 use std::sync::Mutex;
-use std::thread;
 
-use once_cell::sync::OnceCell;
+// This should be replaced with `std::thread::Scope`
+// when that feature is stabilized.
+use crossbeam::thread::scope;
 use wmidi::MidiMessage::*;
 
 use rustsy::*;
-
-static MIXER: OnceCell<Mutex<Mixer>> = OnceCell::new();
-static SLOOP: OnceCell<Loop> = OnceCell::new();
 
 fn main() {
     // Parse arguments.
     let args = argparse::args();
     let kbd = args.keyboard;
-    let sample = args.sampler.unwrap();
 
     // Get a signal from a WAV file, make a loop,
     // set up the mixer.
+    let sample = args.sampler.unwrap();
     let sound = get_sample(&sample).unwrap();
-    SLOOP.set(Loop::new(&sound)).unwrap();
-    if let Err(_) = MIXER.set(Mutex::new(Mixer::new())) {
-        panic!("failed to set mixer");
-    }
+    let sloop = Loop::new(&sound);
 
-    // Start the keyreader to get input.
-    let keystream = read_keys(&kbd).unwrap();
-    // Start outputting samples.
-    let player = thread::spawn(|| {
-        play(MIXER.get().unwrap()).unwrap();
-    });
-    for kev in keystream {
-        match kev {
-            NoteOn(_c, note, _vel) => {
-                let gsloop = SLOOP.get().unwrap();
-                let mut gmixer = MIXER.get().unwrap().lock().unwrap();
-                let samples = Box::new(gsloop.iter_freq(note.to_freq_f32()));
-                let key = usize::from(note as u8);
-                gmixer.borrow_mut().add_key(key, samples);
-                drop(gmixer);
+    // Start the synth.
+    let mixer = Mutex::new(Mixer::new());
+
+    scope(|s| {
+        let h = s.spawn(|_| play(&mixer).unwrap());
+
+        let keystream = read_keys(&kbd).unwrap();
+        for kev in keystream {
+            match kev {
+                NoteOn(_c, note, _vel) => {
+                    let mut gmixer = mixer.lock().unwrap();
+                    let samples = Box::new(sloop.iter_freq(note.to_freq_f32()));
+                    let key = usize::from(note as u8);
+                    gmixer.borrow_mut().add_key(key, samples);
+                    drop(gmixer);
+                }
+                NoteOff(_c, note, _vel) => {
+                    let mut gmixer = mixer.lock().unwrap();
+                    let key = usize::from(note as u8);
+                    gmixer.borrow_mut().remove_key(key);
+                    drop(gmixer);
+                }
+                _ => (),
             }
-            NoteOff(_c, note, _vel) => {
-                let mut gmixer = MIXER.get().unwrap().lock().unwrap();
-                let key = usize::from(note as u8);
-                gmixer.borrow_mut().remove_key(key);
-                drop(gmixer);
-            }
-            _ => (),
         }
-    }
-    player.join().unwrap();
+
+        h.join().unwrap();
+    })
+    .unwrap();
 }
