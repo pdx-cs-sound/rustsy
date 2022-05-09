@@ -11,7 +11,7 @@ use dsp::{
     node::{complex::RealToComplex, fft},
     num_complex::Complex32,
     runtime::node::ProcessNode,
-    spectrum, window,
+    spectrum,
 };
 
 use crate::*;
@@ -31,18 +31,12 @@ const NFFT: usize = 16_384;
 
 // Find the maximum frequency of the buffer.
 fn max_freq(buf: &[f32]) -> f32 {
-    // Window the signal.
-    let init_size = buf.len();
-    let win = window::hamming(init_size, init_size / 2, init_size);
-    let mut signal = Vec::with_capacity(init_size);
-    signal.resize(init_size, 0.0);
-    win.apply(&buf.to_vec(), &mut signal);
-
-    // Do the FFT and return the maximum frequency.
-    let tc = RealToComplex::new();
+    let mut tc = RealToComplex::new();
     let mut csignal = vec![Complex32::default(); NFFT];
-    tc.process_buffer(&signal[..NFFT], &mut csignal).unwrap();
-    let ft = fft::ForwardFFT::new(NFFT);
+    tc.process_buffer(&buf[..NFFT], &mut csignal).unwrap();
+
+    // Do the FFT and return the frequency with maximum amplitude.
+    let mut ft = fft::ForwardFFT::new(NFFT, fft::WindowType::Hamming);
     let mut spectrum = vec![Complex32::default(); NFFT];
     ft.process_buffer(&csignal, &mut spectrum).unwrap();
     spectrum::max_freq(&spectrum, SAMPLE_RATE as usize)

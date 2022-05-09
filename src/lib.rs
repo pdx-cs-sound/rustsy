@@ -3,9 +3,7 @@
 // Please see the file LICENSE in the source
 // distribution of this software for license terms.
 
-//! Music synthesizer components. This crate includes a
-//! bunch of half-finished code and kludgy options, and is
-//! not yet suitable for general use.
+//! Educational music synthesizer.
 
 mod midi;
 mod mixer;

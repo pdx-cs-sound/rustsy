@@ -4,15 +4,15 @@
 # distribution of this software for license terms.
 
 [package]
-name = "synthkit"
+name = "rustsy"
 version = "0.3.0"
 authors = ["Bart Massey <bart@cs.pdx.edu>"]
 edition = "2021"
 
 [dependencies]
-hound = "3.4"
+hound = "3.4.0"
 midir = "0.7.0"
-wmidi = "4.0"
-dsp = "0.10.1"
-once_cell = "1.9"
+wmidi = "4.0.6"
+dsp = "0.10.2"
+once_cell = "1.10.0"
 portaudio-rs = "0.3.2"
