@@ -38,7 +38,7 @@ fn main() {
     let voice: &'static dyn Voice<'_> = Box::leak(voice);
 
     // Start the synth.
-    let mixer = Mutex::new(Mixer::new());
+    let mixer = Mutex::new(Mixer::default());
 
     scope(|s| {
         let h = s.spawn(|_| play(&mixer).unwrap());

@@ -28,14 +28,6 @@ const AGC_VOICES: usize = 8;
 const LINEAR_GAIN: f32 = 0.1;
 
 impl<'a> Mixer<'a> {
-    /// New mixer with no streams.
-    pub fn new() -> Self {
-        Self {
-            held: HashMap::with_capacity(128),
-            gain: LINEAR_GAIN,
-        }
-    }
-
     /// Remove a stream from the mixer by key.
     pub fn remove_key(&mut self, key: usize) {
         self.held.remove(&key);
@@ -62,6 +54,15 @@ impl<'a> Mixer<'a> {
         let was_held = self.held.insert(key, st);
         assert!(was_held.is_none());
         self.agc();
+    }
+}
+
+impl Default for Mixer<'_> {
+    fn default() -> Self {
+        Self {
+            held: HashMap::with_capacity(128),
+            gain: LINEAR_GAIN,
+        }
     }
 }
 
