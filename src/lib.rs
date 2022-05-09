@@ -21,3 +21,10 @@ pub use wavio::*;
 /// samples per second. This constant will be made a
 /// parameter somehow in some future crate version.
 pub const SAMPLE_RATE: u32 = 48_000;
+
+/// All voices run as iterators producing `f32`. This trait
+/// allows a voice to generically produce an iterator for
+/// a given note.
+pub trait Voice<'a> {
+    fn iter_freq(&'a self, freq: f32) -> Box<dyn Iterator<Item=f32> + Send + 'a>;
+}

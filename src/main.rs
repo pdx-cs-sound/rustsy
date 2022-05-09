@@ -22,11 +22,14 @@ fn main() {
     let args = argparse::args();
     let kbd = args.keyboard;
 
-    // Get a signal from a WAV file, make a loop,
-    // set up the mixer.
-    let sample = args.sampler.unwrap();
-    let sound = get_sample(&sample).unwrap();
-    let sloop = Loop::new(&sound);
+    let voice: Box<dyn Voice<'_>> = if let Some(ref sample) = args.sampler {
+        // Get a signal from a WAV file, make a loop.
+        let sound = get_sample(&sample).unwrap();
+        Box::new(Loop::new(&sound))
+    } else {
+        panic!("no valid voice: use --sampler or --wave");
+    };
+    let voice: &'static dyn Voice<'_> = Box::leak(voice);
 
     // Start the synth.
     let mixer = Mutex::new(Mixer::new());
@@ -39,7 +42,7 @@ fn main() {
             match kev {
                 NoteOn(_c, note, _vel) => {
                     let mut gmixer = mixer.lock().unwrap();
-                    let samples = Box::new(sloop.iter_freq(note.to_freq_f32()));
+                    let samples = voice.iter_freq(note.to_freq_f32());
                     let key = usize::from(note as u8);
                     gmixer.borrow_mut().add_key(key, samples);
                     drop(gmixer);
