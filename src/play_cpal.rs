@@ -7,17 +7,14 @@
 
 use std::error::Error;
 use std::io::{self, ErrorKind};
+use std::sync::{Arc, Mutex};
 
 use cpal::traits::*;
 
 use crate::*;
 
-pub struct Player {
-    _stream: cpal::Stream,
-}
-
 /// Gather samples and post for playback.
-pub fn play(mut samples: Box<dyn Iterator<Item = f32> + Send + 'static>) -> Result<Player, Box<dyn Error>> {
+pub fn play(mixer: Arc<Mutex<Mixer<'static>>>) -> Result<Player<cpal::Stream>, Box<dyn Error>> {
 
     // Get the device.
     let host = cpal::default_host();
@@ -66,6 +63,7 @@ pub fn play(mut samples: Box<dyn Iterator<Item = f32> + Send + 'static>) -> Resu
 
     // Build player callback.
     let data_callback = move |out: &mut [i16], _info: &cpal::OutputCallbackInfo| {
+        let mut samples = mixer.lock().unwrap();
         let nout = out.len();
         // println!("run {}", nout);
         for i in 0..nout {
@@ -84,6 +82,7 @@ pub fn play(mut samples: Box<dyn Iterator<Item = f32> + Send + 'static>) -> Resu
             }
         }
     };
+    let data_callback = Box::leak(Box::new(data_callback));
 
     // Build player error callback.
     let error_callback = |err| {
@@ -100,5 +99,5 @@ pub fn play(mut samples: Box<dyn Iterator<Item = f32> + Send + 'static>) -> Resu
     stream.play()?;
 
     eprintln!("stream built");
-    Ok(Player { _stream: stream })
+    Ok(Player(stream))
 }

@@ -43,3 +43,7 @@ pub const WANT_BUFSIZE: u32 = 256;
 pub trait Voice<'a> {
     fn iter_freq(&'a self, freq: f32) -> Box<dyn Iterator<Item = f32> + Send + 'a>;
 }
+
+/// Wrapper struct for player stream, to hold onto it until
+/// done playing.
+pub struct Player<S>(S);

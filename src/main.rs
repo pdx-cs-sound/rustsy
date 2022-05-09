@@ -8,11 +8,11 @@
 mod argparse;
 
 use std::borrow::BorrowMut;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 // This should be replaced with `std::thread::Scope`
 // when that feature is stabilized.
-use crossbeam::thread::scope;
+//use crossbeam::thread::scope;
 use wmidi::MidiMessage::*;
 
 use rustsy::*;
@@ -37,32 +37,26 @@ fn main() {
     let voice: &'static dyn Voice<'_> = Box::leak(voice);
 
     // Start the synth.
-    let mixer = Mixer::default();
+    let mixer = Arc::new(Mutex::new(Mixer::default()));
+    let _stream = play(Arc::clone(&mixer)).unwrap();
 
-    scope(|s| {
-        let h = s.spawn(|_| play(&mixer).unwrap());
-
-        let keystream = read_keys(&kbd).unwrap();
-        for kev in keystream {
-            match kev {
-                NoteOn(_c, note, _vel) => {
-                    let mut gmixer = mixer.lock().unwrap();
-                    let samples = voice.iter_freq(note.to_freq_f32());
-                    let key = usize::from(note as u8);
-                    gmixer.borrow_mut().add_key(key, samples);
-                    drop(gmixer);
-                }
-                NoteOff(_c, note, _vel) => {
-                    let mut gmixer = mixer.lock().unwrap();
-                    let key = usize::from(note as u8);
-                    gmixer.borrow_mut().remove_key(key);
-                    drop(gmixer);
-                }
-                _ => (),
+    let keystream = read_keys(&kbd).unwrap();
+    for kev in keystream {
+        match kev {
+            NoteOn(_c, note, _vel) => {
+                let mut gmixer = mixer.lock().unwrap();
+                let samples = voice.iter_freq(note.to_freq_f32());
+                let key = usize::from(note as u8);
+                gmixer.borrow_mut().add_key(key, samples);
+                drop(gmixer);
             }
+            NoteOff(_c, note, _vel) => {
+                let mut gmixer = mixer.lock().unwrap();
+                let key = usize::from(note as u8);
+                gmixer.borrow_mut().remove_key(key);
+                drop(gmixer);
+            }
+            _ => (),
         }
-
-        h.join().unwrap();
-    })
-    .unwrap();
+    }
 }

@@ -11,16 +11,13 @@ use portaudio_rs as pa;
 
 use crate::*;
 
-pub struct Player {
-    _stream: pa::Stream,
-}
-
 /// Gather samples and post for playback.
-pub fn play<T>(mut samples: Box<dyn Iterator<Item = f32> + Send + 'static>) -> Result<Player, Box<dyn Error>>
+pub fn play<T>(mixer: &Mutex<Mixer>) -> Result<Player<pa::Stream>, Box<dyn Error>>
 where
     T: Iterator<Item = f32>,
 {
     let mut callback = move |_: &[f32], out: &mut[f32], _, _| {
+        let mut samples = mixer.lock().unwrap();
         let mut result = pa::stream::StreamCallbackResult::Continue;
         let nout = out.len()
         for i in 0..nout {
