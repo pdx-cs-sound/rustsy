@@ -3,7 +3,9 @@
 // Please see the file LICENSE in the source
 // distribution of this software for license terms.
 
-// Synthesizer demo example using synthkit-rs.
+//! Educational synthesizer.
+
+mod argparse;
 
 use std::borrow::BorrowMut;
 use std::sync::Mutex;
@@ -12,25 +14,25 @@ use std::thread;
 use once_cell::sync::OnceCell;
 use wmidi::MidiMessage::*;
 
-use synthkit::*;
+use rustsy::*;
 
 static MIXER: OnceCell<Mutex<Mixer<'static>>> = OnceCell::new();
 static SLOOP: OnceCell<Loop> = OnceCell::new();
 
 fn main() {
     // Parse arguments.
-    let args: Vec<String> = std::env::args().collect();
-    let wav = &args[1];
-    let kbd = &args[2];
+    let args = argparse::args();
+    let kbd = args.keyboard;
+    let wav = args.wave.unwrap();
 
     // Get a signal from a WAV file, make a loop,
     // set up the mixer.
-    let sound = get_sample(wav).unwrap();
+    let sound = get_sample(&wav).unwrap();
     SLOOP.set(Loop::new(&sound)).unwrap();
     MIXER.set(Mutex::new(Mixer::new())).unwrap();
 
     // Start the keyreader to get input.
-    let keystream = read_keys(kbd).unwrap();
+    let keystream = read_keys(&kbd).unwrap();
     // Start outputting samples.
     let player = thread::spawn(|| {
         play(MIXER.get().unwrap()).unwrap();

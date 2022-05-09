@@ -10,9 +10,12 @@ use std::io::{self, ErrorKind};
 
 /// Read a sample file and return it as a buffer of
 /// normalized (float) samples.
-pub fn get_sample(name: &str) -> Result<Vec<f32>, Box<dyn Error>> {
+pub fn get_sample<P>(name: P) -> Result<Vec<f32>, Box<dyn Error>>
+where
+    P: AsRef<std::path::Path>,
+{
     // Open and check the file.
-    let mut wavfile = hound::WavReader::open(name)?;
+    let mut wavfile = hound::WavReader::open(name.as_ref())?;
     let ws = wavfile.spec();
     if ws.channels != 1 || ws.bits_per_sample != 16 || ws.sample_rate != crate::SAMPLE_RATE {
         return Err(Box::new(io::Error::from(ErrorKind::InvalidData)));

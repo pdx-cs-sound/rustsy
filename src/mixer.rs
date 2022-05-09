@@ -3,12 +3,11 @@
 // Please see the file LICENSE in the source
 // distribution of this software for license terms.
 
-// Workaround for `Vec::retain()` passing `&T` instead of
-// `&mut T`. See RFC #2160 and issue #25477 for discussion
-// of inclusion of this in `std` (looks like it won't be),
-// and issue #43244 tracking `Vec::drain_filter()`, which
-// is in nightly as a more general proposed replacement,
-// but currently has stabilization issues.
+// *Historical note:* the use of a `HashMap` instead of a
+// `Vec` as a notemap was originally a workaround for
+// `Vec::retain()` passing `&T` instead of `&mut T`.
+// Once [[Vec::retain_mut()]] is stabilized (issue #90829),
+// one could undo this decision, but it seems fine for now.
 use std::collections::HashMap;
 
 use crate::*;
