@@ -13,7 +13,7 @@ pub enum WaveShape {
 struct Wave {
     t: f32,
     dt: f32,
-    f: fn(f32)->f32,
+    f: fn(f32) -> f32,
 }
 
 fn square(t: f32) -> f32 {
@@ -75,7 +75,7 @@ impl WaveGen {
 }
 
 impl<'a> Voice<'a> for WaveGen {
-    fn iter_freq(&'a self, freq: f32) -> Box<dyn Iterator<Item = f32> + Send + 'a> {
+    fn iter_freq(&'a self, freq: f32) -> Box<Signal<'a>> {
         Box::new(Wave::new(freq, self.shape))
     }
 }

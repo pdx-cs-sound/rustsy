@@ -10,6 +10,8 @@
 // one could undo this decision, but it seems fine for now.
 use std::collections::HashMap;
 
+use crate::*;
+
 /// A sample "mixer" that adds values from streams of
 /// samples (currently always associated with a key) and
 /// scales appropriately to get output samples.  Implemented
@@ -17,7 +19,7 @@ use std::collections::HashMap;
 /// no sample streams are available.
 pub struct Mixer<'a> {
     /// Held key indexes and generators.
-    held: HashMap<usize, Box<dyn Iterator<Item = f32> + Send + 'a>>,
+    held: HashMap<usize, Box<Signal<'a>>>,
     /// Current mixer gain value.
     gain: f32,
 }
@@ -50,7 +52,7 @@ impl<'a> Mixer<'a> {
     }
 
     /// Add a stream to the mixer.
-    pub fn add_key(&mut self, key: usize, st: Box<dyn Iterator<Item = f32> + Send + 'a>) {
+    pub fn add_key(&mut self, key: usize, st: Box<Signal<'a>>) {
         let was_held = self.held.insert(key, st);
         assert!(was_held.is_none());
         self.agc();

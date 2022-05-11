@@ -37,11 +37,15 @@ pub const SAMPLE_RATE: u32 = 48_000;
 /// better, until the underruns start.
 pub const WANT_BUFSIZE: u32 = 256;
 
+/// A signal is a stream of samples that can be sent across
+/// threads.
+type Signal<'a> = dyn Iterator<Item = f32> + Send + 'a;
+
 /// All voices run as iterators producing `f32`. This trait
 /// allows a voice to generically produce an iterator for
 /// a given note.
 pub trait Voice<'a> {
-    fn iter_freq(&'a self, freq: f32) -> Box<dyn Iterator<Item = f32> + Send + 'a>;
+    fn iter_freq(&'a self, freq: f32) -> Box<Signal<'a>>;
 }
 
 /// Wrapper struct for player stream, to hold onto it until
