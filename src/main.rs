@@ -28,7 +28,10 @@ fn main() {
         Box::new(Loop::new(&sound))
     } else if let Some(ref wave) = args.wave {
         match wave.as_str() {
-            "sin" | "sine" => Box::new(Sine),
+            "sin" | "sine" => Box::new(WaveGen::new(WaveShape::Sine)),
+            "square" => Box::new(WaveGen::new(WaveShape::Square)),
+            "saw" | "sawtooth" => Box::new(WaveGen::new(WaveShape::Saw)),
+            "tri" | "triangle" => Box::new(WaveGen::new(WaveShape::Tri)),
             _ => panic!("invalid wave shape: use sine"),
         }
     } else {
