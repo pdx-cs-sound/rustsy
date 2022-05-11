@@ -5,6 +5,7 @@
 
 //! Educational music synthesizer.
 
+mod envelope;
 mod midi;
 mod mixer;
 mod sampler;
@@ -21,6 +22,7 @@ use play_cpal as play;
 #[cfg(feature = "portaudio-rs")]
 use play_portaudio_rs as play;
 
+pub use envelope::*;
 pub use midi::*;
 pub use mixer::*;
 pub use play::*;

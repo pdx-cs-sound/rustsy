@@ -37,6 +37,10 @@ fn main() {
     } else {
         panic!("no valid voice: use --sampler or --wave");
     };
+
+    let adsr = Box::new(ADSR::new(0.03, 0.03, 0.8, 0.03));
+    let adsr: &'static ADSR = Box::leak(adsr);
+    let voice = Box::new(EnvelopedVoice::new(voice, &adsr));
     let voice: &'static dyn Voice<'_> = Box::leak(voice);
 
     // Start the synth.
