@@ -14,7 +14,10 @@ use cpal::traits::*;
 use crate::*;
 
 /// Gather samples and post for playback.
-pub fn play(mixer: Arc<Mutex<Mixer<'static>>>) -> Result<Player<cpal::Stream>, Box<dyn Error>> {
+pub fn play<N>(mixer: Arc<Mutex<Mixer<N>>>) -> Result<Player<cpal::Stream>, Box<dyn Error>>
+where
+    N: Iterator<Item = f32> + Send + 'static,
+{
     // Get the device.
     let host = cpal::default_host();
     let device = host

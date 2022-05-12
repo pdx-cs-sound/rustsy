@@ -10,16 +10,14 @@
 // one could undo this decision, but it seems fine for now.
 use std::collections::HashMap;
 
-use crate::*;
-
 /// A sample "mixer" that adds values from streams of
 /// samples (currently always associated with a key) and
 /// scales appropriately to get output samples.  Implemented
 /// as an unbounded iterator: will return `Some(0.0)` when
 /// no sample streams are available.
-pub struct Mixer<'a> {
+pub struct Mixer<N> {
     /// Held key indexes and generators.
-    held: HashMap<usize, Box<Signal<'a>>>,
+    pub held: HashMap<usize, N>,
     /// Current mixer gain value.
     gain: f32,
 }
@@ -29,10 +27,14 @@ const AGC_VOICES: usize = 8;
 /// Mixer gain before AGC kicks in.
 const LINEAR_GAIN: f32 = 0.1;
 
-impl<'a> Mixer<'a> {
+impl<N> Mixer<N> {
     /// Remove a stream from the mixer by key.
     pub fn remove_key(&mut self, key: usize) {
         self.held.remove(&key);
+    }
+
+    pub fn get_key_mut(&mut self, key: usize) -> Option<&mut N> {
+        self.held.get_mut(&key)
     }
 
     /// Remove all streams from the mixer.
@@ -52,14 +54,14 @@ impl<'a> Mixer<'a> {
     }
 
     /// Add a stream to the mixer.
-    pub fn add_key(&mut self, key: usize, st: Box<Signal<'a>>) {
-        let was_held = self.held.insert(key, st);
+    pub fn add_key(&mut self, key: usize, note: N) {
+        let was_held = self.held.insert(key, note);
         assert!(was_held.is_none());
         self.agc();
     }
 }
 
-impl Default for Mixer<'_> {
+impl<N> Default for Mixer<N> {
     fn default() -> Self {
         Self {
             held: HashMap::with_capacity(128),
@@ -70,7 +72,10 @@ impl Default for Mixer<'_> {
 
 /// Iterator over simultaneous streams of samples that adds
 /// them to get a result.
-impl<'a> Iterator for Mixer<'a> {
+impl<N> Iterator for Mixer<N>
+where
+    N: Iterator<Item = f32>,
+{
     type Item = f32;
 
     // Get the next mixed sample. We do not assume that the

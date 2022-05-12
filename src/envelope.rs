@@ -19,7 +19,12 @@ impl ADSR {
     /// Make a new ADSR envelope. `attack`, `decay` and `release` are
     /// times in seconds, `sustain` is a level.
     pub fn new(attack: f32, decay: f32, sustain: f32, release: f32) -> Self {
-        Self { attack, decay, sustain, release }
+        Self {
+            attack,
+            decay,
+            sustain,
+            release,
+        }
     }
 }
 
@@ -112,26 +117,29 @@ impl Iterator for Envelope<'_> {
     }
 }
 
-pub struct EnvelopedVoice<'a> {
-    voice: Box<dyn Voice<'a>>,
-    adsr: &'a ADSR,
+pub struct Note<'a> {
+    signal: Box<Signal<'a>>,
+    envelope: Envelope<'a>,
 }
 
-impl<'a> EnvelopedVoice<'a> {
-    pub fn new(voice: Box<dyn Voice<'a>>, adsr: &'a ADSR) -> Self {
-        Self { voice, adsr }
+impl<'a> Note<'a> {
+    pub fn new(voice: &'a dyn Voice<'a>, adsr: &'a ADSR, freq: f32) -> Self {
+        let signal = voice.iter_freq(freq);
+        let envelope = Envelope::new(adsr);
+        Self { signal, envelope }
+    }
+
+    pub fn release(&mut self) {
+        self.envelope.release();
     }
 }
 
-impl<'a> Voice<'a> for EnvelopedVoice<'a> {
-    fn iter_freq(&'a self, freq: f32) -> Box<Signal<'a>> {
-        let mut signal = self.voice.iter_freq(freq);
-        let mut envelope = Envelope::new(self.adsr);
-        let enveloped_signal = std::iter::from_fn(move || {
-            let e = envelope.next()?;
-            let s = signal.next()?;
-            Some(e * s)
-        });
-        Box::new(enveloped_signal)
+impl<'a> Iterator for Note<'a> {
+    type Item = f32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let e = self.envelope.next()?;
+        let s = self.signal.next()?;
+        Some(e * s)
     }
 }

@@ -40,7 +40,6 @@ fn main() {
 
     let adsr = Box::new(ADSR::new(0.03, 0.03, 0.8, 0.03));
     let adsr: &'static ADSR = Box::leak(adsr);
-    let voice = Box::new(EnvelopedVoice::new(voice, &adsr));
     let voice: &'static dyn Voice<'_> = Box::leak(voice);
 
     // Start the synth.
@@ -50,17 +49,19 @@ fn main() {
     let keystream = read_keys(&kbd).unwrap();
     for kev in keystream {
         match kev {
-            NoteOn(_c, note, _vel) => {
+            NoteOn(_c, key, _vel) => {
                 let mut gmixer = mixer.lock().unwrap();
-                let samples = voice.iter_freq(note.to_freq_f32());
-                let key = usize::from(note as u8);
-                gmixer.borrow_mut().add_key(key, samples);
+                let note = Note::new(voice, adsr, key.to_freq_f32());
+                let key = usize::from(key as u8);
+                gmixer.borrow_mut().add_key(key, note);
                 drop(gmixer);
             }
-            NoteOff(_c, note, _vel) => {
+            NoteOff(_c, key, _vel) => {
                 let mut gmixer = mixer.lock().unwrap();
-                let key = usize::from(note as u8);
-                gmixer.borrow_mut().remove_key(key);
+                let key = usize::from(key as u8);
+                if let Some(note) = gmixer.borrow_mut().get_key_mut(key) {
+                    note.release();
+                }
                 drop(gmixer);
             }
             _ => (),
